@@ -9,7 +9,7 @@ while 1:
     try:
         # Envia os dados para a API
         payload = {'field1' : temperatura, 'field2' : umidade,}
-        requests.get("https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&",params=payload)
+        requests.get('https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&',params=payload)
 
         # Imprime no console a temperatura e umidade atual
         print('Temperatura: {:.2f}'.format(temperatura))
