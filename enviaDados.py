@@ -11,83 +11,75 @@ def imprimeMenu() :
           "1 - Enviar temperatura \n"
           "2 - Enviar umidade \n"
           "3 - Enviar temperatura e umidade \n"
-          "+++++++++++++++++++++++++++++++++ \n")
+          "+++++++++++++++++++++++++++++++++")
 
-def insertComando(valor) :
-    conn = sqlite3.connect('thingspeak.db')
+def insertComando(comando) : # Funcao que insere os comandos do usuario no banco de dados
+    conn = sqlite3.connect('etec.db')
     cur = conn.cursor()
-    cur.execute("""INSERT INTO eventos(evento, descricao) VALUES('comando', ?)""", valor)
+    cur.execute("""INSERT INTO eventos(evento, descricao) VALUES('comando', ?)""", comando)
 
-def insertErro(erro) :
-    conn = sqlite3.connect('thingspeak.db')
+def insertErro() : # Funcao que insere erros no banco de dados
+    conn = sqlite3.connect('etec.db')
     cur = conn.cursor()
-    cur.execute("""INSERT INTO eventos(evento, descricao) VALUES('falha', ?)""", erro)
+    cur.execute("""INSERT INTO eventos(evento, descricao) VALUES('falha', 'URL Inválida')""")
+
+def contaTotalDeFalhas() : # Funcao que conta o total de registros cujo o evento seja falha
+    conn = sqlite3.connect('etec.db')
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM eventos WHERE evento = 'falha'")
+    totalFalhas = cur.fetchall()
+    return totalFalhas
 
 imprimeMenu()
-
-opcao = int(input('Insira o comando: '))
+opcao = input('Insira o comando: ')
 
 while 1:
-    umidade = random.randint(1, 100)  # Variavel com a umidade randomica
-    temperatura = random.randint(1, 50)  # Variavel com a temperatura randomica
+    umidade = random.randint(1, 100)  # Variavel umidade randomica
+    temperatura = random.randint(1, 50)  # Variavel temperatura randomica
 
-    if opcao == 0:
-        insertComando(opcao)
-        print('Não enviar dados...')
+    if opcao == '0': # Não enviar dados
+        insertComando(opcao) # Insere a opcao de comando no banco
+        print('Os dados não serão enviados.')
+        break
 
-    elif opcao == 1:
+    elif opcao == '1': # Envia temperatura
         try:
-            # Envia temperatura
+            time.sleep(5)
             payload = {'field1': temperatura}
             requests.get('https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&', params=payload)
-        except requests.exceptions.RequestException as e:
-            insertErro(e)
+            insertComando(opcao) # Insere a opcao de comando no banco
+            print('Temperatura:', temperatura)
+            time.sleep(5)
 
-        print('Temperatura:', temperatura)
-    elif opcao == 2:
+        except requests.exceptions.RequestException as e:
+            print(e)
+            insertErro() # Insere o registro de falha no banco
+
+    elif opcao == '2': # Envia umidade
         try:
-            # Envia umidade
             payload = {'field2': umidade}
             requests.get('https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&', params=payload)
-        except requests.exceptions.RequestException as e:
-            insertErro(e)
+            insertComando(opcao) # Insere a opcao de comando no banco
+            print('Umidade:', umidade)
+            time.sleep(5)
 
-        print('Umidade:', umidade)
-    elif opcao == 3:
+        except requests.exceptions.RequestException as e:
+            print(e)
+            insertErro() # Insere o registro de falha no banco
+
+    elif opcao == '3': # Envia temperatura e umidade
         try:
-            # Envia temperatura e umidade
             payload = {'field1': temperatura, 'field2': umidade}
             requests.get('https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&', params=payload)
+            insertComando(opcao) # Insere a opcao de comando no banco
+            print('Temperatura:', temperatura)
+            print('Umidade....:', umidade)
+            time.sleep(5)
+
         except requests.exceptions.RequestException as e:
-            insertErro(e)
-
-        print('Temperatura:', temperatura)
-        print('Umidade....:', umidade)
-    else:
-        # não faz nada
+            print(e)
+            insertErro() # Insere o registro de falha no banco
+    else: # O usuario digitou um valor invalido
         print("Comando Inválido!")
-
-    time.sleep(5)
-    # try:
-    #     # Envia os dados para a API
-    #     payload = {'field1': temperatura, 'field2': umidade}
-    #     requests.get('https://api.thingspeak.com/update?api_key=HV0JXNMY9KVX23SH&', params=payload)
-    #
-    #     # Imprime no console a temperatura e umidade atual
-    #     print('Temperatura: {:.2f}'.format(temperatura))
-    #     print('Umidade....: {:.2f}'.format(umidade))
-    #     print('Dados enviados com sucesso')
-    # except requests.exceptions.RequestException as e:  # Exibe a excecao
-    #     # Imprime o erro
-    #     print(e)
-    #
-    #     print('Inserindo erros no banco de dados...')
-    #     sqliteConn = sqlite3.connect('thingspeak.db')
-    #     cur = sqliteConn.cursor()
-    #     cur.execute("INSERT INTO erros(desc_erro) VALUES('URL Inválida')")
-    #     sqliteConn.commit()
-    #     print('Dados inseridos com sucesso!')
-    #
-    #
-    # # Pausa a execucao por 5 segundos
-    # time.sleep(5)
+        imprimeMenu()
+        opcao = input('Insira o comando: ')
